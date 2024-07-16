@@ -8,7 +8,7 @@
 		generate_signed_hash/1, verify_signature/3,
 		generate_block_data_segment/1, generate_block_data_segment/2,
 		generate_block_data_segment_base/1, get_recall_range/3, verify_tx_root/1,
-		hash_wallet_list/1, generate_hash_list_for_block/2,
+		hash_wallet_list/2, generate_hash_list_for_block/2,
 		generate_tx_root_for_block/1, generate_tx_root_for_block/2,
 		generate_size_tagged_list_from_txs/2, generate_tx_tree/1, generate_tx_tree/2,
 		test_wallet_list_performance/2, poa_to_list/1, shift_packing_2_5_threshold/1,
@@ -508,7 +508,7 @@ encode_int(N, S) -> ar_serialize:encode_int(N, S).
 encode_bin(N, S) -> ar_serialize:encode_bin(N, S).
 encode_bin_list(L, LS, ES) -> ar_serialize:encode_bin_list(L, LS, ES).
 
-hash_wallet_list(WalletList) ->
+hash_wallet_list(WalletList, Height) ->
 	ar_patricia_tree:compute_hash(WalletList,
 		fun	(Addr, {Balance, LastTX}) ->
 				EncodedBalance = binary:encode_unsigned(Balance),
@@ -526,7 +526,9 @@ hash_wallet_list(WalletList) ->
 						(ar_serialize:encode_bin(LastTX, 8))/binary,
 						(ar_serialize:encode_int(Denomination, 8))/binary,
 						MiningPermissionBin/binary >>,
-				crypto:hash(sha384, Preimage)
+				Alg = case Height >= ar_fork:height_2_8() of true -> sha256;
+						false -> sha384 end,
+				crypto:hash(Alg, Preimage)
 		end
 	).
 
